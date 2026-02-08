@@ -75,7 +75,24 @@ module.exports = {
   },
   ollama: {
     apiUrl: process.env.OLLAMA_API_URL || 'http://localhost:11434',
-    model: process.env.OLLAMA_MODEL || 'llama3.2'
+    model: process.env.OLLAMA_MODEL || 'llama3.2',
+    timeout: (() => {
+      const DEFAULT_TIMEOUT = 1800000; // 30 minutes
+      const MIN_TIMEOUT = 30000; // 30 seconds
+      const timeoutEnv = process.env.OLLAMA_TIMEOUT_MS;
+
+      if (!timeoutEnv) return DEFAULT_TIMEOUT;
+
+      const parsed = parseInt(timeoutEnv, 10);
+      if (isNaN(parsed) || parsed < MIN_TIMEOUT) {
+        console.warn(
+          `[WARNING] Invalid OLLAMA_TIMEOUT_MS "${timeoutEnv}". Must be a number >= ${MIN_TIMEOUT}ms. Falling back to default ${DEFAULT_TIMEOUT}ms.`
+        );
+        return DEFAULT_TIMEOUT;
+      }
+
+      return parsed;
+    })()
   },
   custom: {
     apiUrl: process.env.CUSTOM_BASE_URL || '',
@@ -100,13 +117,13 @@ module.exports = {
     activateTitle: limitFunctions.activateTitle,
     activateCustomFields: limitFunctions.activateCustomFields
   },
-  specialPromptPreDefinedTags: `You are a document analysis AI. You will analyze the document. 
-  You take the main information to associate tags with the document. 
+  specialPromptPreDefinedTags: `You are a document analysis AI. You will analyze the document.
+  You take the main information to associate tags with the document.
   You will also find the correspondent of the document (Sender not receiver). Also you find a meaningful and short title for the document.
   You are given a list of tags: ${process.env.PROMPT_TAGS}
   Only use the tags from the list and try to find the best fitting tags.
   You do not ask for additional information, you only use the information given in the document.
-  
+
   Return the result EXCLUSIVELY as a JSON object. The Tags and Title MUST be in the language that is used in the document.:
   {
     "title": "xxxxx",
